@@ -1,0 +1,237 @@
+@import "tailwindcss";
+@import "basecoat-css";
+@import "./themes/active-theme.css";
+
+@layer base {
+  body {
+    @apply min-h-dvh bg-background text-foreground antialiased;
+    font-family: var(--font-sans);
+    letter-spacing: var(--tracking-normal, var(--letter-spacing));
+  }
+}
+
+@layer components {
+  .pressure-card--front {
+    border-left: 4px solid var(--chart-1);
+  }
+
+  .pressure-card--rear {
+    border-left: 4px solid var(--chart-2);
+  }
+
+  /* Optimus (и похожие tweakcn-темы) задают --input как заливку, а Basecoat — как цвет рамки */
+  :is(.form, .field)
+    :is(
+      input[type="text"],
+      input[type="email"],
+      input[type="password"],
+      input[type="number"],
+      input[type="tel"],
+      input[type="url"],
+      input[type="search"],
+      input[type="date"],
+      select
+    ) {
+    border-color: var(--border);
+    background-color: color-mix(in oklch, var(--muted) 45%, var(--card));
+  }
+
+  .theme-menu {
+    position: fixed;
+    top: 14px;
+    right: 14px;
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
+  .theme-menu-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .theme-button {
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--card) 72%, transparent);
+    color: var(--foreground);
+    border-radius: 999px;
+    box-shadow: 0 2px 10px color-mix(in srgb, var(--foreground) 8%, transparent);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(12px);
+  }
+
+  .theme-button-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    flex-shrink: 0;
+    opacity: 0.78;
+  }
+
+  .theme-button-icon svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .theme-popover {
+    margin-top: 8px;
+    background: color-mix(in srgb, var(--popover) 84%, transparent);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 10px 24px color-mix(in srgb, var(--foreground) 10%, transparent);
+    min-width: 160px;
+    padding: 6px;
+    display: grid;
+    gap: 4px;
+    backdrop-filter: blur(14px);
+  }
+
+  .settings-group {
+    display: grid;
+    gap: 4px;
+  }
+
+  .settings-section-label {
+    margin: 0 0 4px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+
+  .theme-option {
+    text-align: left;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--foreground);
+    border-radius: 8px;
+    padding: 8px 10px;
+    cursor: pointer;
+    font-weight: 500;
+  }
+
+  .theme-option.is-active {
+    background: var(--muted);
+    border-color: var(--border);
+  }
+
+  .icon-radio-field {
+    min-width: 0;
+    border: 0;
+    margin: 0;
+    padding: 0;
+  }
+
+  .icon-radio-field legend {
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--foreground);
+  }
+
+  .icon-radio-grid {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .icon-radio-grid--ride {
+    grid-template-columns: repeat(auto-fill, minmax(5.25rem, 1fr));
+  }
+
+  .icon-radio-grid--surface {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    max-width: 18rem;
+  }
+
+  .icon-radio-tile {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    min-height: 4.75rem;
+    padding: 0.55rem 0.35rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: color-mix(in oklch, var(--muted) 45%, var(--card));
+    cursor: pointer;
+    text-align: center;
+    font-size: 0.68rem;
+    font-weight: 500;
+    line-height: 1.15;
+    transition:
+      border-color 0.15s ease,
+      background-color 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+
+  .icon-radio-tile:hover {
+    border-color: color-mix(in oklch, var(--primary) 35%, var(--border));
+  }
+
+  .icon-radio-tile:has(input:checked) {
+    border-color: var(--primary);
+    background: color-mix(in oklch, var(--primary) 12%, var(--card));
+    box-shadow: 0 0 0 1px color-mix(in oklch, var(--primary) 35%, transparent);
+  }
+
+  .icon-radio-tile:has(input:focus-visible) {
+    outline: 2px solid color-mix(in oklch, var(--ring) 70%, transparent);
+    outline-offset: 2px;
+  }
+
+  .icon-radio-tile input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    margin: 0;
+  }
+
+  .icon-radio-tile__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.65rem;
+    height: 1.65rem;
+    color: var(--foreground);
+    opacity: 0.82;
+  }
+
+  .icon-radio-tile:has(input:checked) .icon-radio-tile__icon {
+    color: var(--primary);
+    opacity: 1;
+  }
+
+  .icon-radio-tile__icon svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .icon-radio-tile__label {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .form .select.w-full {
+    @apply w-full;
+  }
+
+  .form .select.w-full > button {
+    @apply w-full;
+  }
+}
