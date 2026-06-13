@@ -1,16 +1,16 @@
 import {
-  WHEEL,
-  calculateTirePressureMbar,
-  mbarToPsi,
-  mbarToBar,
-  tireBandPressureWarningMbar,
-  shouldUsePressureBandWarning,
+	calculateTirePressureMbar,
+	mbarToBar,
+	mbarToPsi,
+	shouldUsePressureBandWarning,
+	tireBandPressureWarningMbar,
+	WHEEL,
 } from "./tire-pressure.js";
 
 export const PRESSURE_BAND_WARNING_MESSAGES = {
-  front:
-    "Перед: давление по расчёту выше порога для выбранной полосы ширины покрышки (прямой борт или выбранный корпус покрышки).",
-  rear: "Зад: давление выше порога для полосы ширины покрышки.",
+	front:
+		"Перед: давление по расчёту выше порога для выбранной полосы ширины покрышки (прямой борт или выбранный корпус покрышки).",
+	rear: "Зад: давление выше порога для полосы ширины покрышки.",
 };
 
 /**
@@ -27,60 +27,60 @@ export const PRESSURE_BAND_WARNING_MESSAGES = {
  * @param {string} inputs.surface
  */
 export function calculateWheelPressures(inputs) {
-  const {
-    rideStyle,
-    rimType,
-    tireCasing,
-    surface,
-    bikeWeight,
-    riderWeight,
-    innerRimWidth,
-    wheelDiameter,
-    frontWidthMm,
-    rearWidthMm,
-  } = inputs;
+	const {
+		rideStyle,
+		rimType,
+		tireCasing,
+		surface,
+		bikeWeight,
+		riderWeight,
+		innerRimWidth,
+		wheelDiameter,
+		frontWidthMm,
+		rearWidthMm,
+	} = inputs;
 
-  const base = {
-    rideStyle,
-    rimType,
-    rearTireCasing: tireCasing,
-    surface,
-    bikeWeight: Math.round(bikeWeight),
-    riderWeight: Math.round(riderWeight),
-    innerRimWidth,
-    wheelDiameter,
-  };
+	const base = {
+		rideStyle,
+		rimType,
+		rearTireCasing: tireCasing,
+		surface,
+		bikeWeight: Math.round(bikeWeight),
+		riderWeight: Math.round(riderWeight),
+		innerRimWidth,
+		wheelDiameter,
+	};
 
-  const frontMbar = calculateTirePressureMbar({
-    ...base,
-    tireCasing,
-    tireWidth: frontWidthMm,
-    wheelPosition: WHEEL.FRONT,
-  });
-  const rearMbar = calculateTirePressureMbar({
-    ...base,
-    tireCasing,
-    tireWidth: rearWidthMm,
-    wheelPosition: WHEEL.REAR,
-  });
+	const frontMbar = calculateTirePressureMbar({
+		...base,
+		tireCasing,
+		tireWidth: frontWidthMm,
+		wheelPosition: WHEEL.FRONT,
+	});
+	const rearMbar = calculateTirePressureMbar({
+		...base,
+		tireCasing,
+		tireWidth: rearWidthMm,
+		wheelPosition: WHEEL.REAR,
+	});
 
-  const warnings = [];
-  if (shouldUsePressureBandWarning(rimType, tireCasing, tireCasing)) {
-    if (tireBandPressureWarningMbar(frontWidthMm, frontMbar)) {
-      warnings.push(PRESSURE_BAND_WARNING_MESSAGES.front);
-    }
-    if (tireBandPressureWarningMbar(rearWidthMm, rearMbar)) {
-      warnings.push(PRESSURE_BAND_WARNING_MESSAGES.rear);
-    }
-  }
+	const warnings = [];
+	if (shouldUsePressureBandWarning(rimType, tireCasing, tireCasing)) {
+		if (tireBandPressureWarningMbar(frontWidthMm, frontMbar)) {
+			warnings.push(PRESSURE_BAND_WARNING_MESSAGES.front);
+		}
+		if (tireBandPressureWarningMbar(rearWidthMm, rearMbar)) {
+			warnings.push(PRESSURE_BAND_WARNING_MESSAGES.rear);
+		}
+	}
 
-  return {
-    frontMbar,
-    rearMbar,
-    frontPsi: mbarToPsi(frontMbar),
-    rearPsi: mbarToPsi(rearMbar),
-    frontBar: mbarToBar(frontMbar),
-    rearBar: mbarToBar(rearMbar),
-    warnings,
-  };
+	return {
+		frontMbar,
+		rearMbar,
+		frontPsi: mbarToPsi(frontMbar),
+		rearPsi: mbarToPsi(rearMbar),
+		frontBar: mbarToBar(frontMbar),
+		rearBar: mbarToBar(rearMbar),
+		warnings,
+	};
 }

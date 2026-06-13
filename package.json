@@ -5,18 +5,29 @@
   "type": "module",
   "scripts": {
     "test": "node --test tire-pressure/*.test.js",
+    "lint": "biome check tire-pressure",
+    "lint:fix": "biome check --write tire-pressure",
     "dev:tire-pressure": "parcel tire-pressure/index.html --open",
     "build:tire-pressure": "parcel build tire-pressure/index.html --dist-dir dist/tire-pressure --public-url ./",
-    "build": "pnpm build:tire-pressure"
+    "build": "pnpm build:tire-pressure",
+    "prepare": "simple-git-hooks"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "biome check --staged --no-errors-on-unmatched && pnpm test"
   },
   "keywords": [],
   "author": "Alex K.",
   "license": "MIT",
   "packageManager": "pnpm@10.33.0",
+  "pnpm": {
+    "onlyBuiltDependencies": ["simple-git-hooks"]
+  },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.0",
     "@tailwindcss/postcss": "^4.3.1",
     "parcel": "^2.16.3",
     "postcss": "^8.5.15",
+    "simple-git-hooks": "^2.13.1",
     "tailwindcss": "^4.3.1"
   },
   "dependencies": {
