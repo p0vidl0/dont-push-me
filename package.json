@@ -7,13 +7,14 @@
     "test": "node --test tire-pressure/*.test.js",
     "lint": "biome check tire-pressure",
     "lint:fix": "biome check --write tire-pressure",
+    "lint:staged": "biome check --staged --no-errors-on-unmatched",
     "dev:tire-pressure": "parcel tire-pressure/index.html --open",
     "build:tire-pressure": "parcel build tire-pressure/index.html --dist-dir dist/tire-pressure --public-url ./",
     "build": "pnpm build:tire-pressure",
     "prepare": "simple-git-hooks"
   },
   "simple-git-hooks": {
-    "pre-commit": "biome check --staged --no-errors-on-unmatched && pnpm test"
+    "pre-commit": "pnpm lint:staged && pnpm test"
   },
   "keywords": [],
   "author": "Alex K.",
