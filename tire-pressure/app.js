@@ -3,6 +3,7 @@ import "basecoat-css/dist/js/select.js";
 import {
   RIDE_STYLE,
   RIM_TYPE,
+  SURFACE,
   TIRE_CASING,
   formatTireWidth,
   snapTireWidthMm,
