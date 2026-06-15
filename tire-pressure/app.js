@@ -539,3 +539,17 @@ savedListEl.addEventListener("click", (ev) => {
 
 renderSavedList();
 initTheme();
+
+function registerServiceWorker() {
+	if (typeof navigator === "undefined" || !("serviceWorker" in navigator))
+		return;
+	window.addEventListener("load", () => {
+		navigator.serviceWorker
+			.register(new URL("./service-worker.js", import.meta.url), {
+				type: "module",
+			})
+			.catch((err) => console.warn("Service worker registration failed", err));
+	});
+}
+
+registerServiceWorker();

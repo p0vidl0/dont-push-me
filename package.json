@@ -4,6 +4,7 @@
   "description": "",
   "type": "module",
   "scripts": {
+    "icons": "node scripts/gen-pwa-icons.mjs",
     "test": "node --test tire-pressure/*.test.js",
     "lint": "biome check tire-pressure",
     "lint:fix": "biome check --write tire-pressure",
@@ -24,6 +25,9 @@
     "onlyBuiltDependencies": ["simple-git-hooks"]
   },
   "devDependencies": {
+    "@parcel/packager-raw-url": "2.16.4",
+    "@parcel/service-worker": "^2.16.4",
+    "@parcel/transformer-webmanifest": "^2.16.4",
     "@biomejs/biome": "^2.5.0",
     "@tailwindcss/postcss": "^4.3.1",
     "parcel": "^2.16.3",
