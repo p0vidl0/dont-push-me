@@ -52,12 +52,10 @@ export const RIM_TYPE = {
 	TUBULAR: "RIM_TYPE_TUBULAR",
 	TUBELESS_CROCHET: "RIM_TYPE_TUBELESS_CROCHET",
 	TUBELESS_STRAIGHT_SIDE: "RIM_TYPE_TUBELESS_STRAIGHT_SIDE",
-	XPLR_303: "RIM_TYPE_303_XPLR",
 };
 
 /** Множитель по типу обода для шоссе / MTB / гравия и т.д., не циклокросс */
 const RIM_TYPE_PRESSURE_MULTIPLIER_DEFAULT = {
-	RIM_TYPE_303_XPLR: 0.9675,
 	RIM_TYPE_TUBELESS_CROCHET: 1.03,
 	RIM_TYPE_TUBELESS_STRAIGHT_SIDE: 0.955,
 	RIM_TYPE_TUBES: 1.05,
@@ -77,22 +75,14 @@ export const TIRE_CASING = {
 	STANDARD: "TIRE_CASING_STANDARD",
 	REINFORCED: "TIRE_CASING_REINFORCED",
 	DOUBLE: "TIRE_CASING_DOUBLE",
-	GY_SW: "TIRE_CASING_GY_SW",
-	GY_NSW: "TIRE_CASING_GY_NSW",
-	GY_XPLR_SLICKS: "TIRE_CASING_GY_XPLR_SLICKS",
-	GY_XPLR_VECTOR: "TIRE_CASING_GY_XPLR_VECTOR",
-	GY_INTER: "TIRE_CASING_GY_INTER",
 };
 
 /** Множитель по корпусу покрышки */
 const TIRE_CASING_PRESSURE_MULTIPLIER = {
 	TIRE_CASING_DOUBLE: 0.9,
-	TIRE_CASING_GY_INTER: 1,
-	TIRE_CASING_GY_NSW: 1.025,
 	TIRE_CASING_REINFORCED: 0.95,
 	TIRE_CASING_STANDARD: 1,
 	TIRE_CASING_THIN: 1.025,
-	TIRE_CASING_GY_XPLR_SLICKS: 1,
 };
 
 export const SURFACE = {
@@ -137,27 +127,10 @@ const TIRE_WIDTH_MM_TO_REFERENCE_INNER_RIM_MM = [
 	{ minTireWidthMm: 114, maxTireWidthMm: 133, referenceInnerRimMm: 94 },
 ];
 
-/** Корпуса Goodyear и др., участвующие в правиле «оба колеса → фикс. эталон 25 мм» */
-function isPairedGoodyearWidthRuleCasing(casing) {
-	return [
-		TIRE_CASING.GY_NSW,
-		TIRE_CASING.GY_SW,
-		TIRE_CASING.GY_INTER,
-		TIRE_CASING.GY_XPLR_SLICKS,
-		TIRE_CASING.GY_XPLR_VECTOR,
-	].includes(casing);
-}
-
-/** Для XPLR Vector в формуле берётся только номинальная ширина покрышки */
-function casingUsesLabeledTreadWidthMmOnly(casing) {
-	return casing === TIRE_CASING.GY_XPLR_VECTOR;
-}
-
 /**
  * Эталонная внутренняя ширина обода (мм) для поправки сечения по ширине покрышки.
  */
-function referenceInnerRimWidthMm(tireWidthMm, bothTiresPairedGoodyearCasings) {
-	if (bothTiresPairedGoodyearCasings) return 25;
+function referenceInnerRimWidthMm(tireWidthMm) {
 	const row = TIRE_WIDTH_MM_TO_REFERENCE_INNER_RIM_MM.find(
 		({ minTireWidthMm, maxTireWidthMm }) =>
 			tireWidthMm >= minTireWidthMm && tireWidthMm < maxTireWidthMm,
@@ -175,16 +148,12 @@ function referenceInnerRimWidthMm(tireWidthMm, bothTiresPairedGoodyearCasings) {
  * @param {string} e.rideStyle
  * @param {string} e.rimType
  * @param {string} e.tireCasing — корпус покрышки для этого колеса
- * @param {string} e.rearTireCasing — корпус задней (для правила пары Goodyear при поправке ширины)
  * @param {string} e.surface
  * @param {string} e.wheelPosition — WHEEL_FRONT | WHEEL_REAR
  * @returns {number} давление, мбар
  */
 export function calculateTirePressureMbar(e) {
 	const rideStyleMultiplier = RIDE_STYLE_PRESSURE_MULTIPLIER[e.rideStyle] || 0;
-	const bothTiresPairedGoodyear =
-		isPairedGoodyearWidthRuleCasing(e.tireCasing || "") &&
-		isPairedGoodyearWidthRuleCasing(e.rearTireCasing || "");
 	const wheelLoadFactor = WHEEL_POSITION_LOAD_FACTOR[e.wheelPosition] || 0.5;
 	let rimTypeMultiplier =
 		e.rideStyle === RIDE_STYLE.CROSS
@@ -193,14 +162,9 @@ export function calculateTirePressureMbar(e) {
 	if (!rimTypeMultiplier) rimTypeMultiplier = 1;
 	const casingMultiplier = TIRE_CASING_PRESSURE_MULTIPLIER[e.tireCasing] || 1;
 	const surfaceMultiplier = SURFACE_PRESSURE_MULTIPLIER[e.surface] || 1;
-	let effectiveSectionWidthMm =
+	const effectiveSectionWidthMm =
 		e.tireWidth +
-		INNER_RIM_BLEND *
-			(e.innerRimWidth -
-				referenceInnerRimWidthMm(e.tireWidth, bothTiresPairedGoodyear));
-	if (casingUsesLabeledTreadWidthMmOnly(e.tireCasing || "")) {
-		effectiveSectionWidthMm = e.tireWidth;
-	}
+		INNER_RIM_BLEND * (e.innerRimWidth - referenceInnerRimWidthMm(e.tireWidth));
 	const sectionGeometryTerm =
 		4 *
 		Math.PI ** 2 *
@@ -379,12 +343,7 @@ export function tireBandPressureWarningMbar(tireWidthMm, pressureMbar) {
 	return pressureMbar > band.maxPressureMbar;
 }
 
-/** Учитывать пороги по полосе ширины только для прямого борта или парных Goodyear-корпусов */
-export function shouldUsePressureBandWarning(rimType, frontCasing, rearCasing) {
-	const isHooklessStraightSide = rimType === RIM_TYPE.TUBELESS_STRAIGHT_SIDE;
-	return (
-		isHooklessStraightSide ||
-		isPairedGoodyearWidthRuleCasing(frontCasing || "") ||
-		isPairedGoodyearWidthRuleCasing(rearCasing || "")
-	);
+/** Учитывать пороги по полосе ширины только для прямого борта */
+export function shouldUsePressureBandWarning(rimType) {
+	return rimType === RIM_TYPE.TUBELESS_STRAIGHT_SIDE;
 }

@@ -9,7 +9,7 @@ import {
 
 export const PRESSURE_BAND_WARNING_MESSAGES = {
 	front:
-		"Перед: давление по расчёту выше порога для выбранной полосы ширины покрышки (прямой борт или выбранный корпус покрышки).",
+		"Перед: давление по расчёту выше порога для выбранной полосы ширины покрышки (прямой борт).",
 	rear: "Зад: давление выше порога для полосы ширины покрышки.",
 };
 
@@ -43,7 +43,6 @@ export function calculateWheelPressures(inputs) {
 	const base = {
 		rideStyle,
 		rimType,
-		rearTireCasing: tireCasing,
 		surface,
 		bikeWeight: Math.round(bikeWeight),
 		riderWeight: Math.round(riderWeight),
@@ -65,7 +64,7 @@ export function calculateWheelPressures(inputs) {
 	});
 
 	const warnings = [];
-	if (shouldUsePressureBandWarning(rimType, tireCasing, tireCasing)) {
+	if (shouldUsePressureBandWarning(rimType)) {
 		if (tireBandPressureWarningMbar(frontWidthMm, frontMbar)) {
 			warnings.push(PRESSURE_BAND_WARNING_MESSAGES.front);
 		}

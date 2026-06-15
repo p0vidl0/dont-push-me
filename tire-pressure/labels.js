@@ -19,10 +19,9 @@ export const rideLabels = {
 
 export const rimLabels = {
 	[RIM_TYPE.TUBES]: "Камера (Tubes)",
-	[RIM_TYPE.TUBULAR]: "Тубуляр",
+	[RIM_TYPE.TUBULAR]: "Трубка",
 	[RIM_TYPE.TUBELESS_CROCHET]: "Бескамерный, с крючком",
 	[RIM_TYPE.TUBELESS_STRAIGHT_SIDE]: "Бескамерный, прямой борт",
-	[RIM_TYPE.XPLR_303]: "303 XPLR",
 };
 
 export const casingLabels = {
@@ -30,11 +29,6 @@ export const casingLabels = {
 	[TIRE_CASING.STANDARD]: "Стандарт",
 	[TIRE_CASING.REINFORCED]: "Усиленный",
 	[TIRE_CASING.DOUBLE]: "Двойной",
-	[TIRE_CASING.GY_SW]: "Goodyear SW",
-	[TIRE_CASING.GY_NSW]: "Goodyear NSW",
-	[TIRE_CASING.GY_XPLR_SLICKS]: "Goodyear XPLR Slicks",
-	[TIRE_CASING.GY_XPLR_VECTOR]: "Goodyear XPLR Vector",
-	[TIRE_CASING.GY_INTER]: "Goodyear Inter",
 };
 
 export const surfaceLabels = {
