@@ -296,24 +296,29 @@
               />
             </div>
             <button class="btn-secondary" type="button" id="saveCalcBtn">Сохранить расчёт</button>
+            <button class="btn-outline" type="button" id="shareCalcBtn">Поделиться</button>
             <button class="btn-outline" type="button" id="saveAsNewBtn" hidden>Сохранить как новый</button>
             <button class="btn-ghost" type="button" id="cancelEditBtn" hidden>Отмена</button>
           </div>
-          <p class="text-muted-foreground text-sm" id="saveCalcHint" hidden></p>
         </footer>
       </section>
 
-      <section class="card mt-8" aria-labelledby="sec-saved">
+      <p class="text-muted-foreground mt-2 text-sm" id="saveCalcHint" hidden></p>
+
+      <section class="card mt-8" id="savedSection" aria-labelledby="sec-saved" hidden>
         <header>
           <h2 id="sec-saved">Сохранённые расчёты</h2>
         </header>
         <section>
-          <p class="text-muted-foreground text-sm" id="savedEmpty">Пока нет сохранённых расчётов.</p>
-          <ul class="flex list-none flex-col gap-3 p-0" id="savedList" hidden></ul>
+          <ul class="flex list-none flex-col gap-3 p-0" id="savedList"></ul>
         </section>
       </section>
 
-      <p class="text-muted-foreground mt-10 max-w-prose border-t pt-6 text-sm leading-relaxed">
+      <p
+        class="text-muted-foreground mt-10 max-w-prose border-t pt-6 text-sm leading-relaxed"
+        id="disclaimer"
+        hidden
+      >
         Стартовая оценка, а не замена давления по ощущениям и инструкциям производителя обода и
         покрышки.
       </p>

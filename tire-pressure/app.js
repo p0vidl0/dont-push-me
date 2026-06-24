@@ -26,6 +26,7 @@ import {
 	suggestCalculationName,
 	updateSavedCalculation,
 } from "./saved-calculations.js";
+import { buildShareUrl, parseShareFromSearch } from "./share-url.js";
 import { initTheme } from "./theme.js";
 import {
 	formatTireWidth,
@@ -171,13 +172,13 @@ renderBasecoatSelect(tireCasingEl, {
 initBasecoatSelects();
 
 const resultEl = document.getElementById("result");
+const disclaimerEl = document.getElementById("disclaimer");
 const saveNameEl = document.getElementById("saveName");
 const saveCalcBtn = document.getElementById("saveCalcBtn");
+const shareCalcBtn = document.getElementById("shareCalcBtn");
 const saveAsNewBtn = document.getElementById("saveAsNewBtn");
 const cancelEditBtn = document.getElementById("cancelEditBtn");
 const saveCalcHintEl = document.getElementById("saveCalcHint");
-const savedListEl = document.getElementById("savedList");
-const savedEmptyEl = document.getElementById("savedEmpty");
 
 const frontWidthEl = document.getElementById("frontWidth");
 const rearWidthEl = document.getElementById("rearWidth");
@@ -191,6 +192,8 @@ let editingId = null;
 let lastResults = null;
 let saveNameDirty = false;
 let programmaticNameUpdate = false;
+let shareHintTimer = null;
+let shareToastEl = null;
 
 function updateSliderFill(sliderEl) {
 	const min = Number(sliderEl.min || 0);
@@ -366,6 +369,7 @@ function renderResults(results) {
 		`${results.rearBar.toFixed(2)} бар`;
 	document.getElementById("warnings").innerHTML = results.warnHtml;
 	resultEl.hidden = false;
+	if (disclaimerEl) disclaimerEl.hidden = false;
 }
 
 function runCalculation() {
@@ -396,6 +400,7 @@ function formatSavedDate(iso) {
 }
 
 function setEditingMode(id) {
+	hideShareToast();
 	editingId = id;
 	if (id) {
 		const entry = findSavedCalculation(savedCalculations, id);
@@ -420,22 +425,35 @@ function setEditingMode(id) {
 	}
 }
 
+function getSavedListEl() {
+	return document.getElementById("savedList");
+}
+
+function getSavedSectionEl() {
+	return (
+		document.getElementById("savedSection") ??
+		getSavedListEl()?.closest("section.card") ??
+		null
+	);
+}
+
 function renderSavedList() {
 	savedCalculations = loadSavedCalculations();
 	const sorted = [...savedCalculations].sort(
 		(a, b) => new Date(b.updatedAt) - new Date(a.updatedAt),
 	);
+	const sectionEl = getSavedSectionEl();
+	const listEl = getSavedListEl();
 
 	if (sorted.length === 0) {
-		savedEmptyEl.hidden = false;
-		savedListEl.hidden = true;
-		savedListEl.innerHTML = "";
+		if (sectionEl) sectionEl.hidden = true;
+		if (listEl) listEl.innerHTML = "";
 		return;
 	}
 
-	savedEmptyEl.hidden = true;
-	savedListEl.hidden = false;
-	savedListEl.innerHTML = sorted
+	if (sectionEl) sectionEl.hidden = false;
+	if (!listEl) return;
+	listEl.innerHTML = sorted
 		.map(
 			(entry) => `
         <li class="card saved-item !gap-4 !py-4" data-id="${entry.id}">
@@ -453,6 +471,7 @@ function renderSavedList() {
           </section>
           <footer class="flex flex-wrap gap-2 !px-6 !pt-0">
             <button type="button" class="btn-ghost btn-sm" data-action="edit">Изменить</button>
+            <button type="button" class="btn-outline btn-sm" data-action="share">Поделиться</button>
             <button type="button" class="btn-destructive btn-sm" data-action="delete">Удалить</button>
           </footer>
         </li>`,
@@ -511,6 +530,164 @@ function removeSaved(id) {
 	renderSavedList();
 }
 
+function hideShareToast() {
+	if (shareHintTimer) {
+		clearTimeout(shareHintTimer);
+		shareHintTimer = null;
+	}
+	if (!shareToastEl) return;
+	shareToastEl.hidden = true;
+	shareToastEl.textContent = "";
+}
+
+function positionShareToast(anchorEl) {
+	if (!shareToastEl || !anchorEl) return;
+	const rect = anchorEl.getBoundingClientRect();
+	shareToastEl.hidden = false;
+	const toastHeight = shareToastEl.offsetHeight;
+	const toastWidth = shareToastEl.offsetWidth;
+	const gap = 8;
+	let top = rect.top - gap - toastHeight;
+	if (top < gap) top = rect.bottom + gap;
+	let left = rect.left + rect.width / 2 - toastWidth / 2;
+	left = Math.max(gap, Math.min(left, window.innerWidth - toastWidth - gap));
+	shareToastEl.style.left = `${left}px`;
+	shareToastEl.style.top = `${top}px`;
+}
+
+function showShareToast(anchorEl, message, { autoHideMs = 3000 } = {}) {
+	if (!anchorEl) return;
+	hideShareToast();
+	if (!shareToastEl) {
+		shareToastEl = document.createElement("div");
+		shareToastEl.id = "shareToast";
+		shareToastEl.className = "share-toast";
+		shareToastEl.setAttribute("role", "status");
+		shareToastEl.hidden = true;
+		document.body.appendChild(shareToastEl);
+	}
+	shareToastEl.textContent = message;
+	positionShareToast(anchorEl);
+	requestAnimationFrame(() => positionShareToast(anchorEl));
+	if (autoHideMs > 0) {
+		shareHintTimer = setTimeout(hideShareToast, autoHideMs);
+	}
+}
+
+function showStatusHint(message) {
+	if (!saveCalcHintEl) return;
+	saveCalcHintEl.hidden = false;
+	saveCalcHintEl.className = "text-muted-foreground mt-2 text-sm";
+	saveCalcHintEl.textContent = message;
+}
+
+function canUseNativeShare(url) {
+	if (typeof navigator.share !== "function") return false;
+	if (window.matchMedia("(pointer: fine)").matches) return false;
+	if (typeof navigator.canShare === "function") {
+		try {
+			return navigator.canShare({ url });
+		} catch {
+			return false;
+		}
+	}
+	return true;
+}
+
+function copyTextToClipboardSync(text) {
+	const textarea = document.createElement("textarea");
+	textarea.value = text;
+	textarea.setAttribute("readonly", "");
+	textarea.style.position = "fixed";
+	textarea.style.left = "-9999px";
+	document.body.appendChild(textarea);
+	textarea.focus();
+	textarea.select();
+	let copied = false;
+	try {
+		copied = document.execCommand("copy");
+	} catch {
+		copied = false;
+	}
+	textarea.remove();
+	return copied;
+}
+
+function shareLink(url, name, anchorEl) {
+	const shareTitle = "Давление в шинах";
+	const shareText = name
+		? `Расчёт «${name}»`
+		: "Рекомендуемое давление в покрышках";
+
+	if (canUseNativeShare(url)) {
+		navigator
+			.share({ title: shareTitle, text: shareText, url })
+			.then(() => showShareToast(anchorEl, "Ссылка отправлена"))
+			.catch((err) => {
+				if (err?.name !== "AbortError") copyShareLinkOnDesktop(url, anchorEl);
+			});
+		return;
+	}
+
+	copyShareLinkOnDesktop(url, anchorEl);
+}
+
+function copyShareLinkOnDesktop(url, anchorEl) {
+	const showCopied = () =>
+		showShareToast(anchorEl, "Ссылка скопирована", { autoHideMs: 3000 });
+	const showFailed = () =>
+		showShareToast(anchorEl, "Не удалось скопировать ссылку", {
+			autoHideMs: 3000,
+		});
+
+	if (navigator.clipboard?.writeText) {
+		navigator.clipboard.writeText(url).then(showCopied, () => {
+			if (copyTextToClipboardSync(url)) showCopied();
+			else showFailed();
+		});
+		return;
+	}
+
+	if (copyTextToClipboardSync(url)) showCopied();
+	else showFailed();
+}
+
+function shareCalculation(inputs, name, anchorEl) {
+	try {
+		shareLink(buildShareUrl(inputs, { name }), name, anchorEl);
+	} catch (err) {
+		console.error("Share failed", err);
+		showShareToast(anchorEl, "Не удалось создать ссылку", { autoHideMs: 3000 });
+	}
+}
+
+function shareCurrentCalculation(anchorEl) {
+	if (!lastResults || resultEl.hidden) runCalculation();
+	const inputs = readFormInputs();
+	shareCalculation(inputs, resolveSaveName(inputs), anchorEl ?? shareCalcBtn);
+}
+
+function applyShareFromUrl() {
+	const shared = parseShareFromSearch(window.location.search);
+	if (!shared) return false;
+
+	applyFormInputs(shared.inputs);
+	lastResults = calculateFromInputs(shared.inputs);
+	renderResults(lastResults);
+	if (shared.name) {
+		saveNameDirty = true;
+		saveNameEl.value = shared.name;
+	} else {
+		maybeApplySuggestedName(shared.inputs);
+	}
+	window.history.replaceState(null, "", window.location.pathname);
+	showStatusHint("Расчёт открыт по ссылке");
+	requestAnimationFrame(() => {
+		resultEl.scrollIntoView({ behavior: "smooth", block: "start" });
+	});
+	return true;
+}
+
 formEl.addEventListener("submit", (ev) => {
 	ev.preventDefault();
 	runCalculation();
@@ -529,23 +706,47 @@ formEl.addEventListener("change", () => {
 });
 
 saveCalcBtn.addEventListener("click", () => saveCurrentCalculation());
+shareCalcBtn?.addEventListener("click", (ev) =>
+	shareCurrentCalculation(ev.currentTarget),
+);
 saveAsNewBtn.addEventListener("click", () =>
 	saveCurrentCalculation({ asNew: true }),
 );
 cancelEditBtn.addEventListener("click", () => setEditingMode(null));
 
-savedListEl.addEventListener("click", (ev) => {
+function handleSavedListClick(ev) {
 	const button = ev.target.closest("button[data-action]");
 	if (!button) return;
 	const item = button.closest(".saved-item");
 	if (!item) return;
 	const id = item.dataset.id;
 	if (button.dataset.action === "edit") startEditSaved(id);
+	if (button.dataset.action === "share") {
+		const entry = findSavedCalculation(savedCalculations, id);
+		if (entry) shareCalculation(entry.inputs, entry.name, button);
+	}
 	if (button.dataset.action === "delete") removeSaved(id);
-});
+}
 
-renderSavedList();
-initTheme();
+function bindSavedListEvents() {
+	const root = getSavedSectionEl();
+	if (!root || root.dataset.savedActionsBound === "true") return;
+	root.dataset.savedActionsBound = "true";
+	root.addEventListener("click", handleSavedListClick);
+}
+
+function initApp() {
+	bindSavedListEvents();
+	applyShareFromUrl();
+	renderSavedList();
+	initTheme();
+}
+
+if (document.readyState === "loading") {
+	document.addEventListener("DOMContentLoaded", initApp, { once: true });
+} else {
+	initApp();
+}
 
 function registerServiceWorker() {
 	if (typeof navigator === "undefined" || !("serviceWorker" in navigator))
