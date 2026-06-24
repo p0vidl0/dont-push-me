@@ -173,6 +173,7 @@ initBasecoatSelects();
 const resultEl = document.getElementById("result");
 const saveNameEl = document.getElementById("saveName");
 const saveCalcBtn = document.getElementById("saveCalcBtn");
+const saveAsNewBtn = document.getElementById("saveAsNewBtn");
 const cancelEditBtn = document.getElementById("cancelEditBtn");
 const saveCalcHintEl = document.getElementById("saveCalcHint");
 const savedListEl = document.getElementById("savedList");
@@ -378,9 +379,10 @@ function runCalculation() {
 function formatSavedMeta(entry) {
 	const { inputs } = entry;
 	const style = rideLabels[inputs.rideStyle] ?? inputs.rideStyle;
+	const surface = surfaceLabels[inputs.surface] ?? inputs.surface;
 	const front = formatTireWidth(inputs.frontWidthMm, inputs.rideStyle);
 	const rear = formatTireWidth(inputs.rearWidthMm, inputs.rideStyle);
-	return `${style} · перед ${front} · зад ${rear}`;
+	return `${style} · перед ${front} · зад ${rear} · ${surface}`;
 }
 
 function formatSavedDate(iso) {
@@ -398,15 +400,17 @@ function setEditingMode(id) {
 	if (id) {
 		const entry = findSavedCalculation(savedCalculations, id);
 		saveCalcBtn.textContent = "Обновить расчёт";
+		saveAsNewBtn.hidden = false;
 		cancelEditBtn.hidden = false;
 		saveCalcHintEl.hidden = false;
 		saveCalcHintEl.textContent = entry
-			? `Редактирование «${entry.name}». Измените параметры и нажмите «Обновить расчёт».`
+			? `Редактирование «${entry.name}». Обновите текущий расчёт или сохраните как новый.`
 			: "";
 		saveNameDirty = true;
 		if (entry) saveNameEl.value = entry.name;
 	} else {
 		saveCalcBtn.textContent = "Сохранить расчёт";
+		saveAsNewBtn.hidden = true;
 		cancelEditBtn.hidden = true;
 		saveCalcHintEl.hidden = true;
 		saveCalcHintEl.textContent = "";
@@ -456,12 +460,12 @@ function renderSavedList() {
 		.join("");
 }
 
-function saveCurrentCalculation() {
+function saveCurrentCalculation({ asNew = false } = {}) {
 	const inputs = readFormInputs();
 	lastResults = runCalculation();
 	const name = resolveSaveName(inputs);
 	try {
-		if (editingId) {
+		if (editingId && !asNew) {
 			savedCalculations = updateSavedCalculation(
 				savedCalculations,
 				editingId,
@@ -524,7 +528,10 @@ formEl.addEventListener("change", () => {
 	}
 });
 
-saveCalcBtn.addEventListener("click", saveCurrentCalculation);
+saveCalcBtn.addEventListener("click", () => saveCurrentCalculation());
+saveAsNewBtn.addEventListener("click", () =>
+	saveCurrentCalculation({ asNew: true }),
+);
 cancelEditBtn.addEventListener("click", () => setEditingMode(null));
 
 savedListEl.addEventListener("click", (ev) => {
